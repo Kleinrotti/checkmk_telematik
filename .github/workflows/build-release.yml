@@ -22,6 +22,8 @@ jobs:
       - name: Initialize Checkmk Site
         run: src/docker-entrypoint.sh /bin/true
       - uses: actions/checkout@v2
+      - name: Set current release version
+        run: sed -i 's#0.0.0#${{ github.ref }}#' src/package
       - name: Setup links
         run: src/.devcontainer/symlink.sh
       - name: Update GITHUB_PATH
