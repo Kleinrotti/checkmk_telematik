@@ -25,11 +25,11 @@ jobs:
       - name: Set current release version
         run: sed -i 's#0.0.0#${{ github.ref }}#' src/package
       - name: Setup links
-        run: src/.devcontainer/symlink.sh
+        run: .devcontainer/symlink.sh
       - name: Update GITHUB_PATH
         run: echo "/omd/sites/cmk/bin" >> $GITHUB_PATH
       - name: Build Extension
-        run: src/.devcontainer/build.sh
+        run: .devcontainer/build.sh
         id: cmkpkg
 
       - name: Create Release
