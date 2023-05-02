@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Initialize Checkmk Site
-        run: src/docker-entrypoint.sh /bin/true
+        run: /docker-entrypoint.sh /bin/true
       - uses: actions/checkout@v2
       - name: Set current release version
         run: sed -i 's#0.0.0#${{ github.ref }}#' src/package
