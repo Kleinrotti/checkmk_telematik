@@ -1,0 +1,9 @@
+title: Telematikinfrastruktur: Operation states
+agents: telematik_konnektor
+license: GPLv2
+description:
+ This check monitors the operation states of the Konnektor.
+ It goes to CRITICAL if a operation state has a problem.
+
+discovery:
+ One service is created for each operation state.

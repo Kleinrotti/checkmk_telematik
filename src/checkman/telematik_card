@@ -1,0 +1,9 @@
+title: Telematikinfrastruktur: SMC Card
+agents: telematik_konnektor
+license: GPLv2
+description:
+ This check monitors the SMC cards of the Remote card terminal connected with the Konnektor.
+ It goes CRITICAL if the certificate expired or if the PIN is not verified on a SMC-B card.
+
+discovery:
+ One service is created for each SMC card in the Remote card terminal connected with that Konnektor.

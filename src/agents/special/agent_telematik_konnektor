@@ -1,0 +1,467 @@
+#!/usr/bin/env python3
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+
+# (c) Kleinrotti <kleinrotti@saltcloud.de>
+
+# This is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# ails.  You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+import argparse
+import requests
+import xml.etree.ElementTree as ET
+
+cardsXML = """<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Header/>
+    <SOAP-ENV:Body>
+        <ns4:GetCards xmlns:ns2="http://ws.gematik.de/conn/ConnectorCommon/v5.0" xmlns:ns3="http://ws.gematik.de/tel/error/v2.0" xmlns:ns4="http://ws.gematik.de/conn/EventService/v7.2" xmlns:ns5="http://ws.gematik.de/conn/CardServiceCommon/v2.0" xmlns:ns6="http://ws.gematik.de/conn/CardService/v8.1" xmlns:ns7="http://ws.gematik.de/conn/ConnectorContext/v2.0" xmlns:ns8="http://ws.gematik.de/int/version/ProductInformation/v1.1" xmlns:ns9="http://ws.gematik.de/conn/CardTerminalInfo/v8.0">
+            <ns7:Context>
+                <ns2:MandantId></ns2:MandantId>
+                <ns2:ClientSystemId></ns2:ClientSystemId>
+                <ns2:WorkplaceId></ns2:WorkplaceId>
+            </ns7:Context>
+        </ns4:GetCards>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>"""
+
+pinXML = """<?xml version="1.0" encoding="UTF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SOAP-ENV:Header/>
+  <SOAP-ENV:Body>
+    <GetPinStatus xmlns="http://ws.gematik.de/conn/CardService/v8.1">
+      <Context xmlns="http://ws.gematik.de/conn/ConnectorContext/v2.0">
+        <MandantId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></MandantId>
+        <ClientSystemId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></ClientSystemId>
+        <WorkplaceId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></WorkplaceId>
+      </Context>
+      <CardHandle xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></CardHandle>
+      <PinTyp xmlns="http://ws.gematik.de/conn/CardServiceCommon/v2.0">PIN.SMC</PinTyp>
+    </GetPinStatus>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>"""
+
+card_terminalXML = """<?xml version="1.0" encoding="UtF-8"?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <SOAP-ENV:Header/>
+  <SOAP-ENV:Body>
+    <GetCardTerminals xmlns="http://ws.gematik.de/conn/EventService/v7.2" mandant-wide="false">
+      <Context xmlns="http://ws.gematik.de/conn/ConnectorContext/v2.0">
+        <MandantId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></MandantId>
+        <ClientSystemId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></ClientSystemId>
+        <WorkplaceId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></WorkplaceId>
+        <UserId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"/>
+      </Context>
+    </GetCardTerminals>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>"""
+
+operation_stateXML = """<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
+    <SOAP-ENV:Header/>
+    <SOAP-ENV:Body>
+        <ns4:GetResourceInformation xmlns:ns2="http://ws.gematik.de/conn/ConnectorCommon/v5.0"
+        xmlns:ns3="http://ws.gematik.de/tel/error/v2.0"
+        xmlns:ns4="http://ws.gematik.de/conn/EventService/v7.2"
+        xmlns:ns5="http://ws.gematik.de/conn/CardServiceCommon/v2.0"
+        xmlns:ns6="http://ws.gematik.de/conn/CardService/v8.1"
+        xmlns:ns7="http://ws.gematik.de/conn/ConnectorContext/v2.0"
+        xmlns:ns8="http://ws.gematik.de/int/version/ProductInformation/v1.1"
+        xmlns:ns9="http://ws.gematik.de/conn/CardTerminalInfo/v8.0">
+            <ns7:Context>
+                <ns2:MandantId></ns2:MandantId>
+                <ns2:ClientSystemId></ns2:ClientSystemId>
+                <ns2:WorkplaceId></ns2:WorkplaceId>
+            </ns7:Context>
+        </ns4:GetResourceInformation>
+    </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>"""
+
+
+class SMCCard(object):
+    def __init__(self):
+        self.cardHandle = str()
+        self.type = str()
+        self.slot = str()
+        self.insertTime = str()
+        self.certificateExpiration = str()
+        self.cardHolderName = str()
+        self.Iccsn = str()
+        self.pinStatus = str()
+
+
+class Terminal(object):
+    def __init__(self):
+        self.name = str()
+        self.ipv4Address = str()
+        self.connected = str()
+        self.slots = str()
+        self.mac = str()
+        self.productCode = str()
+        self.vendor = str()
+        self.productVersion = str()
+        self.hwVersion = str()
+        self.fwVersion = str()
+        self.isPhysical = str()
+
+
+class OperationState(object):
+    def __init__(self):
+        self.condition = str()
+        self.severity = str()
+        self.type = str()
+        self.value = str()
+        self.validFrom = str()
+
+
+class VPNState(object):
+    def __init__(self):
+        self.vpnType = str()
+        self.status = str()
+
+
+def requestCards():
+    """Request SMC cards from remote card terminal connected to the konnektor.
+
+    Returns
+    -------
+    ``Response``
+        The http response.
+    """
+    body = cardsXML.replace("<ns2:MandantId></ns2:MandantId>",
+                            f"<ns2:MandantId>{mandant}</ns2:MandantId>").replace(
+        "<ns2:ClientSystemId></ns2:ClientSystemId>",
+        f"<ns2:ClientSystemId>{clientsystem}</ns2:ClientSystemId>"
+    ).replace(
+        "<ns2:WorkplaceId></ns2:WorkplaceId>",
+        f"<ns2:WorkplaceId>{workplace}</ns2:WorkplaceId>"
+    )
+    return request(f"https://{host}:{port}/ws/CardService", body)
+
+
+def requestCardTerminal():
+    """Request connected terminals from the Konnektor.
+
+    Returns
+    -------
+    ``Response``
+        The http response
+    """
+    body = card_terminalXML.replace("></MandantId>", f">{mandant}</MandantId>").replace(
+        "></ClientSystemId>", f">{clientsystem}</ClientSystemId>"
+    ).replace("></WorkplaceId>", f">{workplace}</WorkplaceId>")
+    return request(f"https://{host}:{port}/ws/CardTerminalService", body)
+
+
+def requestPinStatus(cardHandle: str):
+    """Request the SMC-B pin status from the Konnektor.
+
+    Parameters
+    ----------
+    cardHandle : ``str``
+        The cardHandle of the SMC-B card.
+
+    Returns
+    -------
+    ``Response``
+        The http response.
+    """
+    body = pinXML.replace("></MandantId>", f">{mandant}</MandantId>").replace(
+        "></ClientSystemId>", f">{clientsystem}</ClientSystemId>"
+    ).replace("></WorkplaceId>", f">{workplace}</WorkplaceId>").replace(
+        "></CardHandle>", f">{cardHandle}</CardHandle>"
+    )
+    return request(f"https://{host}:{port}/ws/CardService", body)
+
+
+def requestConditionState():
+    """Request conditions states from the Konnektor.
+
+    Returns
+    -------
+    ``Response``
+        The http response.
+    """
+    body = operation_stateXML.replace("<ns2:MandantId></ns2:MandantId>",
+                                      f"<ns2:MandantId>{mandant}</ns2:MandantId>").replace(
+        "<ns2:ClientSystemId></ns2:ClientSystemId>",
+        f"<ns2:ClientSystemId>{clientsystem}</ns2:ClientSystemId>").replace(
+        "<ns2:WorkplaceId></ns2:WorkplaceId>",
+        f"<ns2:WorkplaceId>{workplace}</ns2:WorkplaceId>"
+    )
+    return request(f"https://{host}:{port}/ws/CardTerminalService", body)
+
+
+def request(url: str, data: str):
+    """Base request function.
+
+    Parameters
+    ----------
+    url : ``str``
+        The destination URL.
+    data : ``str``
+        The body of the post request.
+
+    Returns
+    -------
+    ``Response``
+        The http response.
+    """
+    try:
+        response = requests.post(url, headers = {"Content-Type": "text/xml"},
+                                 data=data, verify=verify_ssl)
+        if response.status_code != 200:
+            print(("Got no valid response from konnektor."
+                   f"Code: {response.status_code} Message: {response.text}"))
+        return response
+    except Exception as ex:
+        print(f"Couldn't establish a connection to the konnektor. {ex.args}")
+        raise SystemExit(-1)
+
+
+def parseOperationState(xmlString: str):
+    """Parse the XML from the operation state response to ``OperationState`` objects.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The xml string you want to parse.
+
+    Returns
+    -------
+    ``list[OperationState]``
+        A list of OperationState objects.
+    """
+    lst = []
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    for child in root.iter():
+        if child.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}Connector":
+            for state in child.iter():
+                if state.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}OperatingState":
+                    for errorState in state.iter():
+                        if errorState.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}ErrorState":
+                            s = OperationState()
+                            s.condition = errorState.find(
+                                "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}ErrorCondition").text
+                            s.severity = errorState.find(
+                                "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}Severity").text
+                            s.type = errorState.find(
+                                "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}Type").text
+                            s.validFrom = errorState.find(
+                                "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}ValidFrom").text
+                            s.value = errorState.find(
+                                "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}Value").text
+                            lst.append(s)
+    return lst
+
+
+def parseVpnStatus(xmlString: str):
+    """Parse the XML from the operation state response to ``VPNState`` objects.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The xml string you want to parse.
+
+    Returns
+    -------
+    ``list[VPNState]``
+        A list of VPNState objects.
+    """
+    lst = []
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    for child in root.iter():
+        if child.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}Connector":
+            for vpnStatus in child.iter():
+                v = VPNState()
+                if vpnStatus.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}VPNTIStatus":
+                    v.status = vpnStatus.find(
+                        "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}ConnectionStatus").text
+                    v.vpnType = vpnStatus.tag.split('}')[1]
+                    lst.append(v)
+                elif vpnStatus.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}VPNSISStatus":
+                    v.status = vpnStatus.find(
+                        "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}ConnectionStatus").text
+                    v.vpnType = vpnStatus.tag.split('}')[1]
+                    lst.append(v)
+    return lst
+
+
+def parseCards(xmlString):
+    """Parse the XML from the cards response to ``SMCCard`` objects.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The xml string you want to parse.
+
+    Returns
+    -------
+    ``list[SMCCard]``
+        A list of OperationState objects.
+    """
+    lst = []
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    for child in root.iter():
+        if child.tag == "{http://ws.gematik.de/conn/CardService/v8.1}Card":
+            c = SMCCard()
+            c.type = child.find("{http://ws.gematik.de/conn/CardServiceCommon/v2.0}CardType").text
+            c.cardHandle = child.find(
+                "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}CardHandle").text
+            c.slot = child.find("{http://ws.gematik.de/conn/CardServiceCommon/v2.0}SlotId").text
+            c.insertTime = child.find("{http://ws.gematik.de/conn/CardService/v8.1}InsertTime").text
+            c.certificateExpiration = child.find(
+                "{http://ws.gematik.de/conn/CardService/v8.1}CertificateExpirationDate").text
+            c.cardHolderName = child.find(
+                "{http://ws.gematik.de/conn/CardService/v8.1}CardHolderName").text
+            c.Iccsn = child.find("{http://ws.gematik.de/conn/CardServiceCommon/v2.0}Iccsn").text
+            lst.append(c)
+    return lst
+
+
+def parseTerminal(xmlString: str):
+    """Parse the XML from the terminal response to ``Terminal`` objects.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The xml string you want to parse.
+
+    Returns
+    -------
+    ``list[Terminal]``
+        A list of Terminal objects.
+    """
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    lst = []
+    for child in root.iter():
+        if child.tag == "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}CardTerminal":
+            t = Terminal()
+            t.name = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Name").text
+            t.slots = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Slots").text
+            t.connected = child.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Connected").text
+            t.isPhysical = child.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IS_PHYSICAL").text
+            t.mac = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}MacAddress").text
+            ip = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IPAddress")
+            t.ipv4Address = ip.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IPV4Address").text
+            for child2 in child.iter():
+                if child2.tag == "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductInformation":
+                    for productInfo in child2.iter():
+                        if productInfo.tag == "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductIdentification":
+                            t.vendor = productInfo.find(
+                                "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductVendorID").text
+                            t.productCode = productInfo.find(
+                                "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductCode").text
+                        if productInfo.tag == "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductVersion":
+                            childVersion = productInfo.find(
+                                "{http://ws.gematik.de/int/version/ProductInformation/v1.1}Local")
+                            t.fwVersion = childVersion.find(
+                                "{http://ws.gematik.de/int/version/ProductInformation/v1.1}FWVersion").text
+                            t.hwVersion = childVersion.find(
+                                "{http://ws.gematik.de/int/version/ProductInformation/v1.1}HWVersion").text
+                        if productInfo.tag == "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductTypeInformation":
+                            t.productVersion = productInfo.find(
+                                "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductTypeVersion").text
+            lst.append(t)
+    return lst
+
+
+def parsePIN(xmlString: str):
+    """Parse the XML from the pin response to a string.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The xml string you want to parse.
+
+    Returns
+    -------
+    ``str``
+        The PIN status as string.
+    """
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    for child in root.iter():
+        if child.tag == "{http://ws.gematik.de/conn/CardService/v8.1}GetPinStatusResponse":
+            return child.find("{http://ws.gematik.de/conn/CardService/v8.1}PinStatus").text
+
+
+def output(objects: list, sectionName: str):
+    """Output checkmk data section
+
+    """
+    print(f"<<<{sectionName}:sep(124)>>>")
+    for object in objects:
+        lst = []
+        for attribute, value in object.__dict__.items():
+            lst.append(value)
+        print("|".join(lst))
+
+
+def main(args):
+    global verify_ssl, host, port, mandant, clientsystem, workplace
+    host = args.host
+    mandant = args.mandant
+    port = args.port
+    clientsystem = args.clientsystem
+    workplace = args.workplace
+    if args.ssl is None or args.ssl == "False":
+        verify_ssl = False
+    else:
+        verify_ssl = True
+    cardResponse = requestCards()
+    cardReaderResponse = requestCardTerminal()
+    conditionResponse = requestConditionState()
+    try:
+        cards = parseCards(cardResponse.text)
+    except Exception as ex:
+        print(f"Parsing cards failed. {ex.args}")
+        raise SystemExit(-1)
+
+    for card in cards:
+        # for smc-b cards PIN status gets checked additionally
+        if card.type == "SMC-B":
+            pinResponse = requestPinStatus(card.cardHandle)
+            card.pinStatus = parsePIN(pinResponse.text)
+        else:
+            # set placeholder if no PIN status was checked
+            card.pinStatus = "-"
+    output(cards, "telematik_card")
+    output(parseTerminal(cardReaderResponse.text), "telematik_terminal")
+    output(parseOperationState(conditionResponse.text), "telematik_operation")
+    output(parseVpnStatus(conditionResponse.text), "telematik_vpn")
+
+
+arg_parser = argparse.ArgumentParser()
+arg_parser.add_argument(
+    '-u', '--url'
+)
+arg_parser.add_argument(
+    '-p', '--port'
+)
+arg_parser.add_argument(
+    '-s', '--ssl'
+)
+arg_parser.add_argument(
+    '-m', '--mandant'
+)
+arg_parser.add_argument(
+    '-c', '--clientsystem'
+)
+arg_parser.add_argument(
+    '-w', '--workplace'
+)
+args = arg_parser.parse_args()
+main(args)

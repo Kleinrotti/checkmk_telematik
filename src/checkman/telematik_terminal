@@ -1,0 +1,8 @@
+title: Telematikinfrastruktur: Remote Card terminal
+agents: telematik_konnektor
+license: GPLv2
+description:
+ This check monitors the Remote card terminal connected to the Konnektor.
+
+discovery:
+ One service is created for each Remote card terminal.

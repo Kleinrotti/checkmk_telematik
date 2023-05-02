@@ -1,0 +1,1 @@
+# CheckMK Special Agent for Monitoring a TI Konnektor

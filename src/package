@@ -1,0 +1,17 @@
+{
+    'author': u'Kleinrotti',
+    'description': u'A plugin to get information from a TI Konnektor like SMC-B state and operation state.',
+    'download_url': 'https://github.com/Kleinrotti/checkmk_telematik',
+    'files': {
+        'agent_based': ['telematik_card.py', 'telematik_terminal.py', 'telematik_vpn.py', 'telematik_operation.py'],
+        'agents': ['special/agent_telematik_konnektor'],
+        'web': ['plugins/wato/telematik_konnektor_register.py', 'plugins/wato/telematik_card.py', 'plugins/wato/telematik_operation.py'],
+        'checks': ['agent_telematik_konnektor'],
+        'checkman': ['telematik_card', 'telematik_terminal', 'telematik_vpn', 'telematik_operation']
+    },
+    'name': 'telematik_konnektor',
+    'title': u'Telematikinfrastruktur Konnektor Agent',
+    'version': '1.0.0',
+    'version.min_required': '2.0.0',
+    'version.packaged': '2.0.35'
+}
