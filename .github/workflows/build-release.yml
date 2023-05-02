@@ -32,18 +32,6 @@ jobs:
         run: echo "/omd/sites/cmk/bin" >> $GITHUB_PATH
       - name: Build Extension
         run: .devcontainer/build.sh
-        id: cmkpkg
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1.0.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.RELEASE_VERSION }}
-          release_name: ${{ env.RELEASE_VERSION }}
-          draft: false
-          prerelease: false
 
       - name: Release files
         uses: softprops/action-gh-release@v1
@@ -51,4 +39,4 @@ jobs:
           generate_release_notes: false
           fail_on_unmatched_files: true
           files: |
-              src/telematik_konnektor-${{ env.RELEASE_VERSION }}.mkp
+              telematik_konnektor-${{ env.RELEASE_VERSION }}.mkp
