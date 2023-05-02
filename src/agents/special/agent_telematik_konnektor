@@ -213,7 +213,7 @@ def request(url: str, data: str):
         The http response.
     """
     try:
-        response = requests.post(url, headers = {"Content-Type": "text/xml"},
+        response = requests.post(url, headers={"Content-Type": "text/xml"},
                                  data=data, verify=verify_ssl)
         if response.status_code != 200:
             print(("Got no valid response from konnektor."
