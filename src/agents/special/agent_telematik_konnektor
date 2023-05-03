@@ -17,6 +17,10 @@
 import argparse
 import requests
 import xml.etree.ElementTree as ET
+import urllib3
+
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 cardsXML = """<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
     <SOAP-ENV:Header/>
@@ -412,7 +416,7 @@ def output(objects: list, sectionName: str):
 
 def main(args):
     global verify_ssl, host, port, mandant, clientsystem, workplace
-    host = args.host
+    host = args.url
     mandant = args.mandant
     port = args.port
     clientsystem = args.clientsystem
