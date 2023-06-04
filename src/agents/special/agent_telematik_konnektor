@@ -216,15 +216,12 @@ def request(url: str, data: str):
     ``Response``
         The http response.
     """
-    try:
-        response = requests.post(url, headers={"Content-Type": "text/xml"},
-                                 data=data, verify=verify_ssl)
-        if response.status_code != 200:
-            print(("Got no valid response from konnektor."
-                   f"Code: {response.status_code} Message: {response.text}"))
-        return response
-    except Exception as ex:
-        print(f"Couldn't establish a connection to the konnektor. {ex.args}")
+    response = requests.post(url, headers={"Content-Type": "text/xml"},
+                             data=data, verify=verify_ssl, cert=client_cert)
+    if response.status_code != 200:
+        print(("Got no valid response from konnektor."
+              f"Code: {response.status_code} Message: {response.text}"))
+    return response
 
 
 def parseOperationState(xmlString: str):
@@ -316,16 +313,20 @@ def parseCards(xmlString):
     for child in root.iter():
         if child.tag == "{http://ws.gematik.de/conn/CardService/v8.1}Card":
             c = SMCCard()
-            c.type = child.find("{http://ws.gematik.de/conn/CardServiceCommon/v2.0}CardType").text
+            c.type = child.find(
+                "{http://ws.gematik.de/conn/CardServiceCommon/v2.0}CardType").text
             c.cardHandle = child.find(
                 "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}CardHandle").text
-            c.slot = child.find("{http://ws.gematik.de/conn/CardServiceCommon/v2.0}SlotId").text
-            c.insertTime = child.find("{http://ws.gematik.de/conn/CardService/v8.1}InsertTime").text
+            c.slot = child.find(
+                "{http://ws.gematik.de/conn/CardServiceCommon/v2.0}SlotId").text
+            c.insertTime = child.find(
+                "{http://ws.gematik.de/conn/CardService/v8.1}InsertTime").text
             c.certificateExpiration = child.find(
                 "{http://ws.gematik.de/conn/CardService/v8.1}CertificateExpirationDate").text
             c.cardHolderName = child.find(
                 "{http://ws.gematik.de/conn/CardService/v8.1}CardHolderName").text
-            c.Iccsn = child.find("{http://ws.gematik.de/conn/CardServiceCommon/v2.0}Iccsn").text
+            c.Iccsn = child.find(
+                "{http://ws.gematik.de/conn/CardServiceCommon/v2.0}Iccsn").text
             lst.append(c)
     return lst
 
@@ -349,14 +350,18 @@ def parseTerminal(xmlString: str):
     for child in root.iter():
         if child.tag == "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}CardTerminal":
             t = Terminal()
-            t.name = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Name").text
-            t.slots = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Slots").text
+            t.name = child.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Name").text
+            t.slots = child.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Slots").text
             t.connected = child.find(
                 "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}Connected").text
             t.isPhysical = child.find(
                 "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IS_PHYSICAL").text
-            t.mac = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}MacAddress").text
-            ip = child.find("{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IPAddress")
+            t.mac = child.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}MacAddress").text
+            ip = child.find(
+                "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IPAddress")
             t.ipv4Address = ip.find(
                 "{http://ws.gematik.de/conn/CardTerminalInfo/v8.0}IPV4Address").text
             for child2 in child.iter():
@@ -415,12 +420,16 @@ def output(objects: list, sectionName: str):
 
 
 def main(args):
-    global verify_ssl, host, port, mandant, clientsystem, workplace
+    global verify_ssl, host, port, mandant, clientsystem, workplace, client_cert
     host = args.url
     mandant = args.mandant
     port = args.port
     clientsystem = args.clientsystem
     workplace = args.workplace
+    if (args.certificate is not None):
+        client_cert = (args.certificate, args.certificate_key)
+    else:
+        client_cert = None
     if args.ssl is None or args.ssl == "False":
         verify_ssl = False
     else:
@@ -465,6 +474,12 @@ arg_parser.add_argument(
 )
 arg_parser.add_argument(
     '-w', '--workplace'
+)
+arg_parser.add_argument(
+    '-cert', '--certificate'
+)
+arg_parser.add_argument(
+    '-certkey', '--certificate_key'
 )
 args = arg_parser.parse_args()
 main(args)
