@@ -458,28 +458,28 @@ def main(args):
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument(
-    '-u', '--url'
+    '-u', '--url', help="IP address or FQDN of the Konnektor"
 )
 arg_parser.add_argument(
-    '-p', '--port'
+    '-p', '--port', help="Webinterface port"
 )
 arg_parser.add_argument(
-    '-s', '--ssl'
+    '-s', '--ssl', help="SSL verification, True or False"
 )
 arg_parser.add_argument(
-    '-m', '--mandant'
+    '-m', '--mandant', help="Mandant ID"
 )
 arg_parser.add_argument(
-    '-c', '--clientsystem'
+    '-c', '--clientsystem', help="Clientsystem ID"
 )
 arg_parser.add_argument(
-    '-w', '--workplace'
+    '-w', '--workplace', help="Workplace ID"
 )
 arg_parser.add_argument(
-    '-cert', '--certificate'
+    '-cert', '--certificate', help="Path to the client certificate, only needed if Konnektor requires client authentication."
 )
 arg_parser.add_argument(
-    '-certkey', '--certificate_key'
+    '-certkey', '--certificate_key', help="Path to the client certificate key (unencrypted), only needed if Konnektor requires client authentication."
 )
 args = arg_parser.parse_args()
 main(args)
