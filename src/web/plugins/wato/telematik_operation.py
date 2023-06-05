@@ -25,7 +25,7 @@ from cmk.gui.valuespec import Dictionary, MonitoringState
 
 def _parameter_valuespec_telematik_konnektor_operation():
     return Dictionary(
-        elements = [
+        elements=[
             (
                 "fatal",
                 MonitoringState(

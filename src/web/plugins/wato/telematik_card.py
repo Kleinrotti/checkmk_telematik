@@ -25,7 +25,7 @@ from cmk.gui.valuespec import Dictionary, MonitoringState, Tuple, Integer
 
 def _parameter_valuespec_telematik_konnektor_card():
     return Dictionary(
-        elements = [
+        elements=[
             (
                 "verified",
                 MonitoringState(
