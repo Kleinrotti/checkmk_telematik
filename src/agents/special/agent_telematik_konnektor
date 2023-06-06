@@ -437,10 +437,7 @@ def main(args):
     cardResponse = requestCards()
     cardReaderResponse = requestCardTerminal()
     conditionResponse = requestConditionState()
-    try:
-        cards = parseCards(cardResponse.text)
-    except Exception as ex:
-        print(f"Parsing cards failed. {ex.args}")
+    cards = parseCards(cardResponse.text)
 
     for card in cards:
         # for smc-b cards PIN status gets checked additionally
