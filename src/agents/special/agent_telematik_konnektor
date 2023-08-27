@@ -27,9 +27,9 @@ cardsXML = """<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap
     <SOAP-ENV:Body>
         <ns4:GetCards xmlns:ns2="http://ws.gematik.de/conn/ConnectorCommon/v5.0" xmlns:ns3="http://ws.gematik.de/tel/error/v2.0" xmlns:ns4="http://ws.gematik.de/conn/EventService/v7.2" xmlns:ns5="http://ws.gematik.de/conn/CardServiceCommon/v2.0" xmlns:ns6="http://ws.gematik.de/conn/CardService/v8.1" xmlns:ns7="http://ws.gematik.de/conn/ConnectorContext/v2.0" xmlns:ns8="http://ws.gematik.de/int/version/ProductInformation/v1.1" xmlns:ns9="http://ws.gematik.de/conn/CardTerminalInfo/v8.0">
             <ns7:Context>
-                <ns2:MandantId></ns2:MandantId>
-                <ns2:ClientSystemId></ns2:ClientSystemId>
-                <ns2:WorkplaceId></ns2:WorkplaceId>
+                <ns2:MandantId>%s</ns2:MandantId>
+                <ns2:ClientSystemId>%s</ns2:ClientSystemId>
+                <ns2:WorkplaceId>%s</ns2:WorkplaceId>
             </ns7:Context>
         </ns4:GetCards>
     </SOAP-ENV:Body>
@@ -41,11 +41,11 @@ pinXML = """<?xml version="1.0" encoding="UTF-8"?>
   <SOAP-ENV:Body>
     <GetPinStatus xmlns="http://ws.gematik.de/conn/CardService/v8.1">
       <Context xmlns="http://ws.gematik.de/conn/ConnectorContext/v2.0">
-        <MandantId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></MandantId>
-        <ClientSystemId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></ClientSystemId>
-        <WorkplaceId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></WorkplaceId>
+        <MandantId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</MandantId>
+        <ClientSystemId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</ClientSystemId>
+        <WorkplaceId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</WorkplaceId>
       </Context>
-      <CardHandle xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></CardHandle>
+      <CardHandle xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</CardHandle>
       <PinTyp xmlns="http://ws.gematik.de/conn/CardServiceCommon/v2.0">PIN.SMC</PinTyp>
     </GetPinStatus>
   </SOAP-ENV:Body>
@@ -57,9 +57,9 @@ card_terminalXML = """<?xml version="1.0" encoding="UtF-8"?>
   <SOAP-ENV:Body>
     <GetCardTerminals xmlns="http://ws.gematik.de/conn/EventService/v7.2" mandant-wide="false">
       <Context xmlns="http://ws.gematik.de/conn/ConnectorContext/v2.0">
-        <MandantId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></MandantId>
-        <ClientSystemId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></ClientSystemId>
-        <WorkplaceId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"></WorkplaceId>
+        <MandantId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</MandantId>
+        <ClientSystemId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</ClientSystemId>
+        <WorkplaceId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0">%s</WorkplaceId>
         <UserId xmlns="http://ws.gematik.de/conn/ConnectorCommon/v5.0"/>
       </Context>
     </GetCardTerminals>
@@ -78,9 +78,9 @@ operation_stateXML = """<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoa
         xmlns:ns8="http://ws.gematik.de/int/version/ProductInformation/v1.1"
         xmlns:ns9="http://ws.gematik.de/conn/CardTerminalInfo/v8.0">
             <ns7:Context>
-                <ns2:MandantId></ns2:MandantId>
-                <ns2:ClientSystemId></ns2:ClientSystemId>
-                <ns2:WorkplaceId></ns2:WorkplaceId>
+                <ns2:MandantId>%s</ns2:MandantId>
+                <ns2:ClientSystemId>%s</ns2:ClientSystemId>
+                <ns2:WorkplaceId>%s</ns2:WorkplaceId>
             </ns7:Context>
         </ns4:GetResourceInformation>
     </SOAP-ENV:Body>
@@ -137,14 +137,7 @@ def requestCards():
     ``Response``
         The http response.
     """
-    body = cardsXML.replace("<ns2:MandantId></ns2:MandantId>",
-                            f"<ns2:MandantId>{mandant}</ns2:MandantId>").replace(
-        "<ns2:ClientSystemId></ns2:ClientSystemId>",
-        f"<ns2:ClientSystemId>{clientsystem}</ns2:ClientSystemId>"
-    ).replace(
-        "<ns2:WorkplaceId></ns2:WorkplaceId>",
-        f"<ns2:WorkplaceId>{workplace}</ns2:WorkplaceId>"
-    )
+    body = cardsXML % (mandant, clientsystem, workplace)
     return request(f"https://{host}:{port}/ws/CardService", body)
 
 
@@ -156,9 +149,7 @@ def requestCardTerminal():
     ``Response``
         The http response
     """
-    body = card_terminalXML.replace("></MandantId>", f">{mandant}</MandantId>").replace(
-        "></ClientSystemId>", f">{clientsystem}</ClientSystemId>"
-    ).replace("></WorkplaceId>", f">{workplace}</WorkplaceId>")
+    body = card_terminalXML % (mandant, clientsystem, workplace)
     return request(f"https://{host}:{port}/ws/CardTerminalService", body)
 
 
@@ -175,11 +166,7 @@ def requestPinStatus(cardHandle: str):
     ``Response``
         The http response.
     """
-    body = pinXML.replace("></MandantId>", f">{mandant}</MandantId>").replace(
-        "></ClientSystemId>", f">{clientsystem}</ClientSystemId>"
-    ).replace("></WorkplaceId>", f">{workplace}</WorkplaceId>").replace(
-        "></CardHandle>", f">{cardHandle}</CardHandle>"
-    )
+    body = pinXML % (mandant, clientsystem, workplace, cardHandle)
     return request(f"https://{host}:{port}/ws/CardService", body)
 
 
@@ -191,13 +178,7 @@ def requestConditionState():
     ``Response``
         The http response.
     """
-    body = operation_stateXML.replace("<ns2:MandantId></ns2:MandantId>",
-                                      f"<ns2:MandantId>{mandant}</ns2:MandantId>").replace(
-        "<ns2:ClientSystemId></ns2:ClientSystemId>",
-        f"<ns2:ClientSystemId>{clientsystem}</ns2:ClientSystemId>").replace(
-        "<ns2:WorkplaceId></ns2:WorkplaceId>",
-        f"<ns2:WorkplaceId>{workplace}</ns2:WorkplaceId>"
-    )
+    body = operation_stateXML % (mandant, clientsystem, workplace)
     return request(f"https://{host}:{port}/ws/CardTerminalService", body)
 
 
