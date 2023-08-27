@@ -197,12 +197,15 @@ def request(url: str, data: str):
     ``Response``
         The http response.
     """
+    if debug is True:
+        print(f"--------Debug request to {url}--------\n" + data)
     response = requests.post(url, headers={"Content-Type": "text/xml"},
                              data=data, verify=verify_ssl, cert=client_cert)
     if response.status_code != 200:
-        print(("Got no valid response from konnektor."
+        print(("Got no response from Konnektor."
               f"Code: {response.status_code} Message: {response.text}"))
-    return response
+    if debug is True:
+        print(f"--------Debug response from {url}--------\n" + response.text)
 
 
 def parseOperationState(xmlString: str):
@@ -401,12 +404,13 @@ def output(objects: list, sectionName: str):
 
 
 def main(args):
-    global verify_ssl, host, port, mandant, clientsystem, workplace, client_cert
+    global verify_ssl, host, port, mandant, clientsystem, workplace, client_cert, debug
     host = args.url
     mandant = args.mandant
     port = args.port
     clientsystem = args.clientsystem
     workplace = args.workplace
+    debug = args.debug
     if (args.certificate is not None):
         client_cert = (args.certificate, args.certificate_key)
     else:
@@ -458,6 +462,9 @@ arg_parser.add_argument(
 )
 arg_parser.add_argument(
     '-certkey', '--certificate_key', help="Path to the client certificate key (unencrypted), only needed if Konnektor requires client authentication."
+)
+arg_parser.add_argument(
+    '-d', '--debug', help="Enable debugging which outputs the received xml responses", action='store_true'
 )
 args = arg_parser.parse_args()
 main(args)
