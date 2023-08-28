@@ -18,6 +18,7 @@ import argparse
 import requests
 import xml.etree.ElementTree as ET
 import urllib3
+import sys
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -134,8 +135,8 @@ def requestCards():
 
     Returns
     -------
-    ``Response``
-        The http response.
+    ``str``
+        The http response text.
     """
     body = cardsXML % (mandant, clientsystem, workplace)
     return request(f"https://{host}:{port}/ws/CardService", body)
@@ -146,8 +147,8 @@ def requestCardTerminal():
 
     Returns
     -------
-    ``Response``
-        The http response
+    ``str``
+        The http response text.
     """
     body = card_terminalXML % (mandant, clientsystem, workplace)
     return request(f"https://{host}:{port}/ws/CardTerminalService", body)
@@ -163,8 +164,8 @@ def requestPinStatus(cardHandle: str):
 
     Returns
     -------
-    ``Response``
-        The http response.
+    ``str``
+        The http response text.
     """
     body = pinXML % (mandant, clientsystem, workplace, cardHandle)
     return request(f"https://{host}:{port}/ws/CardService", body)
@@ -175,8 +176,8 @@ def requestConditionState():
 
     Returns
     -------
-    ``Response``
-        The http response.
+    ``str``
+        The http response text.
     """
     body = operation_stateXML % (mandant, clientsystem, workplace)
     return request(f"https://{host}:{port}/ws/CardTerminalService", body)
@@ -194,18 +195,19 @@ def request(url: str, data: str):
 
     Returns
     -------
-    ``Response``
-        The http response.
+    ``str``
+        The http response text.
     """
     if debug is True:
         print(f"--------Debug request to {url}--------\n" + data)
-    response = requests.post(url, headers={"Content-Type": "text/xml"},
-                             data=data, verify=verify_ssl, cert=client_cert)
+        response = requests.post(url, headers={"Content-Type": "text/xml"},
+                                 data=data, verify=verify_ssl, cert=client_cert)
     if response.status_code != 200:
-        print(("Got no response from Konnektor."
-              f"Code: {response.status_code} Message: {response.text}"))
+        sys.exit(f"Got no response from Konnektor. Calling function: {sys._getframe(1).f_code.co_name}, "
+                 f"HTTP code: {response.status_code}")
     if debug is True:
         print(f"--------Debug response from {url}--------\n" + response.text)
+    return response.text
 
 
 def parseOperationState(xmlString: str):
@@ -390,6 +392,28 @@ def parsePIN(xmlString: str):
             return child.find("{http://ws.gematik.de/conn/CardService/v8.1}PinStatus").text
 
 
+def checkErrors(xmlString: str):
+    """Check a xml string on error elements.
+    If found, the program exits with error information.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The xml string you want to check.
+    """
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    for child in root.iter():
+        # if an error tag is found there is an error returned from the Konnektor
+        if child.tag == "{http://ws.gematik.de/tel/error/v2.0}Error":
+            faultstring = root.findall(
+                ".//{http://ws.gematik.de/tel/error/v2.0}ErrorText")[0].text
+            code = root.findall(
+                ".//{http://ws.gematik.de/tel/error/v2.0}Code")[0].text
+            sys.exit(
+                f"The Konnektor returned an error. Code:{code} Message:{faultstring}")
+
+
 def output(objects: list, sectionName: str):
     """Output checkmk data section
 
@@ -420,22 +444,28 @@ def main(args):
     else:
         verify_ssl = True
     cardResponse = requestCards()
+    checkErrors(cardResponse)
+
     cardReaderResponse = requestCardTerminal()
+    checkErrors(cardReaderResponse)
+
     conditionResponse = requestConditionState()
-    cards = parseCards(cardResponse.text)
+    checkErrors(conditionResponse)
+    cards = parseCards(cardResponse)
 
     for card in cards:
         # for smc-b cards PIN status gets checked additionally
         if card.type == "SMC-B":
             pinResponse = requestPinStatus(card.cardHandle)
-            card.pinStatus = parsePIN(pinResponse.text)
+            checkErrors(pinResponse)
+            card.pinStatus = parsePIN(pinResponse)
         else:
             # set placeholder if no PIN status was checked
             card.pinStatus = "-"
     output(cards, "telematik_card")
-    output(parseTerminal(cardReaderResponse.text), "telematik_terminal")
-    output(parseOperationState(conditionResponse.text), "telematik_operation")
-    output(parseVpnStatus(conditionResponse.text), "telematik_vpn")
+    output(parseTerminal(cardReaderResponse), "telematik_terminal")
+    output(parseOperationState(conditionResponse), "telematik_operation")
+    output(parseVpnStatus(conditionResponse), "telematik_vpn")
 
 
 arg_parser = argparse.ArgumentParser()
