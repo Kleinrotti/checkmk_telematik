@@ -35,12 +35,17 @@ from .agent_based_api.v1 import (
     register
 )
 
+telematik_terminal_factory_settings = {
+    'true': 0,
+    'false': 1
+}
+
 
 @dataclass(frozen=True)
 class Terminal():
     name: str
     ipv4: str
-    connected: bool
+    connected: str
     slots: int
     mac: str
     productName: str
@@ -48,7 +53,7 @@ class Terminal():
     productVersion: str
     hwVersion: str
     fwVersion: str
-    isPhysical: bool
+    isPhysical: str
 
 
 Section = List[Terminal]
@@ -68,19 +73,19 @@ def discovery_telematik_terminal(section: Section) -> DiscoveryResult:
         yield Service(item=item.name)
 
 
-def check_telematik_terminal(item: str, section: Section) -> CheckResult:
+def check_telematik_terminal(item: str, params, section: Section) -> CheckResult:
     term = None
+    # search for the corresponding in the section array
     for sec in section:
         if item == sec.name:
             term = sec
             break
     if term is None:
         return None
-    state = State.OK
+    # get the state from the connected value
+    state = State(params[term.connected.lower()])
     text = f"Vendor: {term.vendor}, Model: {term.productName}, Connected: {term.connected}"
     detail = f"Ipv4: {term.ipv4}\nMAC: {term.mac}\nProduct version: {term.productVersion}\nHW version: {term.hwVersion}\nFW version: {term.fwVersion}\nSlots: {term.slots}\nPhysical: {term.isPhysical}"
-    if term.connected is False:
-        state = State.CRIT
     yield Result(state=state, summary=text, details=detail)
 
 
@@ -92,8 +97,10 @@ register.agent_section(
 
 register.check_plugin(
     name="telematik_terminal",
-    service_name="Remote KT %s",
+    service_name="Card terminal %s",
     sections=['telematik_terminal'],
     discovery_function=discovery_telematik_terminal,
-    check_function=check_telematik_terminal
+    check_function=check_telematik_terminal,
+    check_ruleset_name="telematik_terminal",
+    check_default_parameters=telematik_terminal_factory_settings,
 )

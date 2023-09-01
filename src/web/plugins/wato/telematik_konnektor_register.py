@@ -87,8 +87,17 @@ def _valuespec_special_agents_telematik_konnektor():
                  totext=_("Certificate validation enabled"),
              ),
              ),
+            ("mandant_wide",
+             FixedValue(
+                 value=True,
+                 title=_("Mandant wide"),
+                 totext=_("Mandant-wide request is enabled"),
+                 help=_("Create services for all terminals and cards associated with the Konnektor."
+                        "Leave this unchecked if you only want the terminal and cards from the remote card terminal.")
+             ),
+             ),
         ],
-        optional_keys=["client_auth", "verify_ssl"],
+        optional_keys=["client_auth", "verify_ssl", "mandant_wide"],
         title=_("Telematikinfrastruktur Konnektor Agent"),
         help=_("This rule selects the Telematik Special Agent instead of the normal Check_MK Agent "
                "which collects the data through the Konnektor API."),
