@@ -27,6 +27,8 @@ def agent_telematik_konnektor_arguments(params, hostname, ipaddress):
     if "client_auth" in params:
         args += ['-cert', params["client_auth"]["client_cert"]]
         args += ['-certkey', params["client_auth"]["client_priv_key"]]
+    if "mandant_wide" in params:
+        args += ['-mw']
     return args
 
 
