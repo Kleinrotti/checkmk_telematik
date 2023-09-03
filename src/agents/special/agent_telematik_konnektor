@@ -113,6 +113,7 @@ class Terminal(object):
         self.hwVersion = str()
         self.fwVersion = str()
         self.isPhysical = str()
+        self.workplaceids = []
 
 
 class OperationState(object):
@@ -368,6 +369,8 @@ def parseTerminal(xmlString: str):
                         if productInfo.tag == "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductTypeInformation":
                             t.productVersion = productInfo.find(
                                 "{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductTypeVersion").text
+                if child2.tag == "{http://ws.gematik.de/conn/ConnectorCommon/v5.0}WorkplaceId":
+                    t.workplaceids.append(child2.text)
             lst.append(t)
     return lst
 
@@ -422,7 +425,13 @@ def output(objects: list, sectionName: str):
     for object in objects:
         lst = []
         for attribute, value in object.__dict__.items():
-            if value is not None:
+            # if value is a list it gets split into a single string seperated by a colon
+            if isinstance(value, list):
+                elements = ""
+                for element in value:
+                    elements += element + ';'
+                lst.append(elements)
+            elif value is not None:
                 lst.append(value)
         print("|".join(lst))
 
