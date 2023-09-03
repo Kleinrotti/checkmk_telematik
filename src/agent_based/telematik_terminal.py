@@ -15,9 +15,9 @@
 # Boston, MA 02110-1301 USA.
 
 # Sample agent output
-# <name>|<ipv4>|<connected>|<slots>|<mac>|<productName>|<vendor>|<productVersion>|<hwVersion>|<fwVersion>|<physical>
+# <name>|<ipv4>|<connected>|<slots>|<mac>|<productName>|<vendor>|<productVersion>|<hwVersion>|<fwVersion>|<physical>|<workplaces>
 # <<<telematik_terminal:sep(124)>>>
-# ST-1506-A00031472|10.110.122.167|true|4|10-1c-B3-16-f8-b4|ST1506|DECHY|1.7.1|4.0.0|3.0.0|true
+# ST-1506-A00031472|10.110.122.167|true|4|10-1c-B3-16-f8-b4|ST1506|DECHY|1.7.1|4.0.0|3.0.0|true|test1;test2;test3
 
 from dataclasses import dataclass
 from typing import List
@@ -54,6 +54,7 @@ class Terminal():
     hwVersion: str
     fwVersion: str
     isPhysical: str
+    workplaceids: str
 
 
 Section = List[Terminal]
@@ -62,9 +63,9 @@ Section = List[Terminal]
 def parse_telematik_terminal(string_table: StringTable) -> Section:
     return [
         Terminal(name, ipv4, connected, slots, mac, productName,
-                 vendor, productVersion, hwVersion, fwVersion, isPhysical)
+                 vendor, productVersion, hwVersion, fwVersion, isPhysical, workplaceids)
         for name, ipv4, connected, slots, mac, productName, vendor,
-        productVersion, hwVersion, fwVersion, isPhysical in string_table
+        productVersion, hwVersion, fwVersion, isPhysical, workplaceids in string_table
     ]
 
 
@@ -74,18 +75,18 @@ def discovery_telematik_terminal(section: Section) -> DiscoveryResult:
 
 
 def check_telematik_terminal(item: str, params, section: Section) -> CheckResult:
-    term = None
-    # search for the corresponding in the section array
-    for sec in section:
-        if item == sec.name:
-            term = sec
-            break
+    # search for the corresponding item in the section
+    term = next(filter(lambda x: x.name == item, section), None)
     if term is None:
         return None
     # get the state from the connected value
     state = State(params[term.connected.lower()])
     text = f"Vendor: {term.vendor}, Model: {term.productName}, Connected: {term.connected}"
-    detail = f"Ipv4: {term.ipv4}\nMAC: {term.mac}\nProduct version: {term.productVersion}\nHW version: {term.hwVersion}\nFW version: {term.fwVersion}\nSlots: {term.slots}\nPhysical: {term.isPhysical}"
+    detail = f"Ipv4: {term.ipv4}\nMAC: {term.mac}\nProduct version: {term.productVersion}\nHW version: {term.hwVersion}\nFW version: {term.fwVersion}\nSlots: {term.slots}\nPhysical: {term.isPhysical}\n"
+    # split every colon to get it as list and remove the last element because its empty due to the colon at the end
+    workplaces = term.workplaceids.split(';')[:-1]
+    for workplace in workplaces:
+        detail += f"\nWorkplace: {workplace}"
     yield Result(state=state, summary=text, details=detail)
 
 
