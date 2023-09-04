@@ -19,6 +19,7 @@ import requests
 import xml.etree.ElementTree as ET
 import urllib3
 import sys
+import urllib3.exceptions
 
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -201,8 +202,11 @@ def request(url: str, data: str):
     """
     if debug is True:
         print(f"--------Debug request to {url}--------\n" + data)
-    response = requests.post(url, headers={"Content-Type": "text/xml"},
-                             data=data, verify=verify_ssl, cert=client_cert)
+    try:
+        response = requests.post(url, headers={"Content-Type": "text/xml"},
+                                 data=data, verify=verify_ssl, cert=client_cert)
+    except requests.ConnectionError:
+        sys.exit("Connection refused by Konnektor. Check your ip/port configuration or firewall.")
     if response.status_code != 200:
         sys.exit(f"Got no response from Konnektor. Calling function: {sys._getframe(1).f_code.co_name}, "
                  f"HTTP code: {response.status_code}")
