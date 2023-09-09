@@ -1,0 +1,8 @@
+title: Telematikinfrastruktur: Konnektor
+agents: telematik_konnektor
+license: GPLv2
+description:
+ This check shows information about the Konnektor itself.
+
+discovery:
+ One service is created for the Konnektor.

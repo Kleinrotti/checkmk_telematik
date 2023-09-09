@@ -132,6 +132,28 @@ class VPNState(object):
         self.status = str()
 
 
+class Connector(object):
+    def __init__(self):
+        self.productTypeVersion = str()
+        self.productName = str()
+        self.productVendorName = str()
+        self.tlsMandatory = str()
+        self.clientAuthMandatory = ()
+        self.hwVersion = str()
+        self.fwVersion = str()
+
+
+def requestConnector():
+    """Request the connector.sds.
+
+    Returns
+    -------
+    ``str``
+        The http response text.
+    """
+    return requests.get(f"https://{host}:{port}/connector.sds", verify=verify_ssl).text
+
+
 def requestCards():
     """Request SMC cards from remote card terminal connected to the konnektor.
 
@@ -213,6 +235,20 @@ def request(url: str, data: str):
     if debug is True:
         print(f"--------Debug response from {url}--------\n" + response.text)
     return response.text
+
+
+def parseConnector(xmlString: str):
+    tree = ET.ElementTree(ET.fromstring(xmlString))
+    root = tree.getroot()
+    c = Connector()
+    c.productTypeVersion = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductTypeVersion").text
+    c.clientAuthMandatory = root.find(".//{http://ws.gematik.de/conn/ServiceDirectory/v3.1}ClientAutMandatory").text
+    c.fwVersion = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}FWVersion").text
+    c.hwVersion = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}HWVersion").text
+    c.productName = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductName").text
+    c.productVendorName = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductVendorName").text
+    c.tlsMandatory = root.find(".//{http://ws.gematik.de/conn/ServiceDirectory/v3.1}TLSMandatory").text
+    return [c]
 
 
 def parseOperationState(xmlString: str):
@@ -423,7 +459,6 @@ def checkErrors(xmlString: str):
 
 def output(objects: list, sectionName: str):
     """Output checkmk data section
-
     """
     print(f"<<<{sectionName}:sep(124)>>>")
     for object in objects:
@@ -459,6 +494,8 @@ def main(args):
         verify_ssl = False
     else:
         verify_ssl = True
+    connectorResponse = requestConnector()
+    connector = parseConnector(connectorResponse)
     cardResponse = requestCards()
     checkErrors(cardResponse)
 
@@ -478,6 +515,7 @@ def main(args):
         else:
             # set placeholder if no PIN status was checked
             card.pinStatus = "-"
+    output(connector, "telematik_connector")
     output(cards, "telematik_card")
     output(parseTerminal(cardReaderResponse), "telematik_terminal")
     output(parseOperationState(conditionResponse), "telematik_operation")
