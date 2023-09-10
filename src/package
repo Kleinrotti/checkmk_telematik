@@ -8,7 +8,7 @@
         'agents': ['special/agent_telematik_konnektor'],
         'web': ['plugins/wato/telematik_konnektor_register.py', 'plugins/wato/telematik_card.py', 'plugins/wato/telematik_operation.py', 'plugins/wato/telematik_terminal.py'],
         'checks': ['agent_telematik_konnektor'],
-        'checkman': ['telematik_card', 'telematik_terminal', 'telematik_vpn', 'telematik_operation']
+        'checkman': ['telematik_card', 'telematik_terminal', 'telematik_vpn', 'telematik_operation', 'telematik_connector']
     },
     'name': 'telematik_konnektor',
     'title': u'Telematikinfrastruktur Konnektor Agent',
