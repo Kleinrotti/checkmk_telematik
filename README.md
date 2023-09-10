@@ -2,16 +2,16 @@
 
 ## This plugin was tested with a Secunet Konnektor PTV5 (Firmware 5.0.5, Hardware 2.1.0)
 
-## Check these requirements:
-- Ensure the remote monitoring is enabled in the Konnektor
-- If client side authentication is enabled in the Konnektor you have to provide the certificate in the WATO rule
-- The special agent is developed with the WSDL version 7.2 from the EventService, if your Konnektor has an older version this will not work
-
-## First things to say
+## Some things to say
 This plugin was developed without a "real" SOAP client. Therefore, it is a little bit hacky and if a new WSDL version is available, it has to be adapted in the source code.
 The advantage is that the plugin works immediately and no further Python packages like zeep need to be installed.
 As this plugin is only meant for simple monitoring purposes, I went this way.
 Maybe I will rewrite it in the future, when it is no longer necessary to manually download the WSDL files from the Gematik github and the connector provides them itself instead.
+
+## Check these requirements:
+- Ensure the remote monitoring is enabled in the Konnektor
+- If client side authentication is enabled in the Konnektor you have to provide the certificate in the WATO rule
+- The special agent is developed with the WSDL version 7.2 from the EventService, if your Konnektor has an older version this will not work
 
 ## How to use
 - I recommend to set the ipv4 address of the host in checkmk instead of using name resolution
