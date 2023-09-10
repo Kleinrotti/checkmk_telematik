@@ -4,9 +4,9 @@
                     u'Please read the changelog (https://github.com/Kleinrotti/checkmk_telematik/releases) before updating!',
     'download_url': 'https://github.com/Kleinrotti/checkmk_telematik',
     'files': {
-        'agent_based': ['telematik_card.py', 'telematik_terminal.py', 'telematik_vpn.py', 'telematik_operation.py'],
+        'agent_based': ['telematik_card.py', 'telematik_terminal.py', 'telematik_vpn.py', 'telematik_operation.py', 'telematik_connector.py'],
         'agents': ['special/agent_telematik_konnektor'],
-        'web': ['plugins/wato/telematik_konnektor_register.py', 'plugins/wato/telematik_card.py', 'plugins/wato/telematik_operation.py'],
+        'web': ['plugins/wato/telematik_konnektor_register.py', 'plugins/wato/telematik_card.py', 'plugins/wato/telematik_operation.py', 'plugins/wato/telematik_terminal.py'],
         'checks': ['agent_telematik_konnektor'],
         'checkman': ['telematik_card', 'telematik_terminal', 'telematik_vpn', 'telematik_operation']
     },
