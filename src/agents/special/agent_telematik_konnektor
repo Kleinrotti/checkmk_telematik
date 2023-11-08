@@ -151,7 +151,7 @@ def requestConnector():
     ``str``
         The http response text.
     """
-    return requests.get(f"https://{host}:{port}/connector.sds", verify=verify_ssl).text
+    return requests.get(f"https://{host}:{port}/connector.sds", verify=verify_ssl, cert=client_cert).text
 
 
 def requestCards():
