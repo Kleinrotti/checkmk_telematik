@@ -10,5 +10,9 @@
     },
     "flake8.args": [
         "--max-line-length", "550"
-    ]
+    ],
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8"
+    },
+    "python.formatting.provider": "none"
 }
