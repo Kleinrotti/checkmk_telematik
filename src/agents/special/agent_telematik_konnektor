@@ -151,7 +151,8 @@ def requestConnector():
     ``str``
         The http response text.
     """
-    return requests.get(f"https://{host}:{port}/connector.sds", verify=verify_ssl, cert=client_cert).text
+    return requests.get(f"https://{host}:{port}/connector.sds", verify=verify_ssl,
+                        cert=client_cert, auth=(username, password)).text
 
 
 def requestCards():
@@ -163,7 +164,7 @@ def requestCards():
         The http response text.
     """
     body = cardsXML % (mandant_wide, mandant, clientsystem, workplace)
-    return request(f"https://{host}:{port}/ws/CardService", body)
+    return request(endpoint_url_eventservice, body)
 
 
 def requestCardTerminal():
@@ -175,7 +176,7 @@ def requestCardTerminal():
         The http response text.
     """
     body = card_terminalXML % (mandant_wide, mandant, clientsystem, workplace)
-    return request(f"https://{host}:{port}/ws/CardTerminalService", body)
+    return request(endpoint_url_eventservice, body)
 
 
 def requestPinStatus(cardHandle: str):
@@ -192,7 +193,7 @@ def requestPinStatus(cardHandle: str):
         The http response text.
     """
     body = pinXML % (mandant, clientsystem, workplace, cardHandle)
-    return request(f"https://{host}:{port}/ws/CardService", body)
+    return request(endpoint_url_cardservice, body)
 
 
 def requestConditionState():
@@ -204,10 +205,10 @@ def requestConditionState():
         The http response text.
     """
     body = operation_stateXML % (mandant, clientsystem, workplace)
-    return request(f"https://{host}:{port}/ws/CardTerminalService", body)
+    return request(endpoint_url_eventservice, body)
 
 
-def request(url: str, data: str):
+def request(endpoint_url, data: str):
     """Base request function.
 
     Parameters
@@ -223,23 +224,37 @@ def request(url: str, data: str):
         The http response text.
     """
     if debug is True:
-        print(f"--------Debug request to {url}--------\n" + data)
+        print(f"--------Debug request to {endpoint_url}--------\n" + data)
     try:
-        response = requests.post(url, headers={"Content-Type": "text/xml"},
-                                 data=data, verify=verify_ssl, cert=client_cert)
+        response = requests.post(endpoint_url, headers={"Content-Type": "text/xml;charset=UTF-8"},
+                                 data=data, verify=verify_ssl, cert=client_cert, auth=(username, password))
     except requests.ConnectionError:
         sys.exit("Connection refused by Konnektor. Check your ip/port configuration or firewall.")
     if response.status_code != 200:
         sys.exit(f"Got no response from Konnektor. Calling function: {sys._getframe(1).f_code.co_name}, "
                  f"HTTP code: {response.status_code}")
     if debug is True:
-        print(f"--------Debug response from {url}--------\n" + response.text)
+        print(f"--------Debug response from {endpoint_url}--------\n" + response.text)
     return response.text
 
 
 def parseConnector(xmlString: str):
+    """Parse the XML from the connector.sds response.
+
+    Parameters
+    ----------
+    xmlString : ``str``
+        The connector.sds xml string.
+
+    Returns
+    -------
+    ``tuple[list[Connector], str, str]``
+        A tuple with a list of connector objects, the EventService URL and CardService URL.
+    """
     tree = ET.ElementTree(ET.fromstring(xmlString))
     root = tree.getroot()
+    endpointEventService = None
+    endpointCardService = None
     c = Connector()
     c.productTypeVersion = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductTypeVersion").text
     c.clientAuthMandatory = root.find(".//{http://ws.gematik.de/conn/ServiceDirectory/v3.1}ClientAutMandatory").text
@@ -248,7 +263,19 @@ def parseConnector(xmlString: str):
     c.productName = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductName").text
     c.productVendorName = root.find(".//{http://ws.gematik.de/int/version/ProductInformation/v1.1}ProductVendorName").text
     c.tlsMandatory = root.find(".//{http://ws.gematik.de/conn/ServiceDirectory/v3.1}TLSMandatory").text
-    return [c]
+    for child in root.iter():
+        if child.tag == "{http://ws.gematik.de/conn/ServiceInformation/v2.0}Service":
+            if child.attrib["Name"] == "EventService":
+                for child2 in child:
+                    endpointEventService = child2.find(".//{http://ws.gematik.de/conn/ServiceInformation/v2.0}EndpointTLS")
+                    if endpointEventService is not None:
+                        endpointEventService = endpointEventService.attrib["Location"]
+            if child.attrib["Name"] == "CardService":
+                for child2 in child:
+                    endpointCardService = child2.find(".//{http://ws.gematik.de/conn/ServiceInformation/v2.0}EndpointTLS")
+                    if endpointCardService is not None:
+                        endpointCardService = endpointCardService.attrib["Location"]
+    return [c], endpointEventService, endpointCardService
 
 
 def parseOperationState(xmlString: str):
@@ -477,7 +504,7 @@ def output(objects: list, sectionName: str):
 
 def main(args):
     global verify_ssl, host, port, mandant, clientsystem, workplace, client_cert, debug
-    global mandant_wide
+    global mandant_wide, endpoint_url_eventservice, endpoint_url_cardservice, username, password
     host = args.url
     mandant = args.mandant
     port = args.port
@@ -486,16 +513,14 @@ def main(args):
     debug = args.debug
     # mandant wide boolean value has to be lower case
     mandant_wide = str(args.mandant_wide).lower()
-    if (args.certificate is not None):
-        client_cert = (args.certificate, args.certificate_key)
-    else:
-        client_cert = None
-    if args.ssl is None or args.ssl == "False":
-        verify_ssl = False
-    else:
-        verify_ssl = True
+    verify_ssl = args.ssl_verify
+    client_cert = (args.cert, args.certkey)
+    username = args.username
+    password = args.password
     connectorResponse = requestConnector()
     connector = parseConnector(connectorResponse)
+    endpoint_url_eventservice = connector[1]
+    endpoint_url_cardservice = connector[2]
     cardResponse = requestCards()
     checkErrors(cardResponse)
 
@@ -515,7 +540,7 @@ def main(args):
         else:
             # set placeholder if no PIN status was checked
             card.pinStatus = "-"
-    output(connector, "telematik_connector")
+    output(connector[0], "telematik_connector")
     output(cards, "telematik_card")
     output(parseTerminal(cardReaderResponse), "telematik_terminal")
     output(parseOperationState(conditionResponse), "telematik_operation")
@@ -524,34 +549,40 @@ def main(args):
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument(
-    '-u', '--url', help="IP address or FQDN of the Konnektor"
+    '-u', '--url', help="IP address or FQDN of the Konnektor", required=True
 )
 arg_parser.add_argument(
-    '-p', '--port', help="Webinterface port"
+    '-p', '--port', help="Webinterface port", required=True
 )
 arg_parser.add_argument(
-    '-s', '--ssl', help="SSL verification, True or False"
+    '-m', '--mandant', help="Mandant ID", required=True
 )
 arg_parser.add_argument(
-    '-m', '--mandant', help="Mandant ID"
+    '-c', '--clientsystem', help="Clientsystem ID", required=True
 )
 arg_parser.add_argument(
-    '-c', '--clientsystem', help="Clientsystem ID"
+    '-w', '--workplace', help="Workplace ID", required=True
 )
 arg_parser.add_argument(
-    '-w', '--workplace', help="Workplace ID"
+    '--ssl_verify', help="Enable ssl verification.", action='store_true'
 )
 arg_parser.add_argument(
-    '-cert', '--certificate', help="Path to the client certificate, only needed if Konnektor requires client authentication."
+    '-cert', help="Path to the client certificate, only needed if Konnektor requires client authentication.", default=None
 )
 arg_parser.add_argument(
-    '-certkey', '--certificate_key', help="Path to the client certificate key (unencrypted), only needed if Konnektor requires client authentication."
+    '-certkey', help="Path to the client certificate key (unencrypted), only needed if Konnektor requires client authentication.", default=None
 )
 arg_parser.add_argument(
-    '-d', '--debug', help="Enable debugging which outputs the received xml responses", action='store_true'
+    '-username', help="Username for http basic authentication, only needed if Konnektor requires client authentication.", default=None
 )
 arg_parser.add_argument(
-    '-mw', '--mandant_wide', help="Enable mandant wide terminals and cards.", action='store_true'
+    '-password', help="Password for http basic authentication, only needed if Konnektor requires client authentication.", default=None
+)
+arg_parser.add_argument(
+    '--debug', help="Enable debugging which outputs the received xml responses", action='store_true'
+)
+arg_parser.add_argument(
+    '--mandant_wide', help="Enable mandant wide terminals and cards.", action='store_true'
 )
 args = arg_parser.parse_args()
 main(args)
