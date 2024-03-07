@@ -23,12 +23,16 @@ def agent_telematik_konnektor_arguments(params, hostname, ipaddress):
     args += ['-c', params['clientsystem']]
     args += ['-w', params['workplace']]
     if "verify_ssl" in params:
-        args += ['-s', params['verify_ssl']]
+        args += ['--ssl_verify']
     if "client_auth" in params:
-        args += ['-cert', params["client_auth"]["client_cert"]]
-        args += ['-certkey', params["client_auth"]["client_priv_key"]]
+        if "cert_auth" in params["client_auth"]:
+            args += ['-cert', params["client_auth"][1]["client_cert"]]
+            args += ['-certkey', params["client_auth"][1]["client_priv_key"]]
+        elif "basic_auth" in params["client_auth"]:
+            args += ['-username', params["client_auth"][1]["username"]]
+            args += ['-password', params["client_auth"][1]["password"]]
     if "mandant_wide" in params:
-        args += ['-mw']
+        args += ['--mandant_wide']
     return args
 
 

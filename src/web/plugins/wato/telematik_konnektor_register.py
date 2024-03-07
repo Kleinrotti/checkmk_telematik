@@ -20,7 +20,7 @@ from cmk.gui.plugins.wato.utils import (
     rulespec_registry,
 )
 from cmk.gui.plugins.wato.datasource_programs import RulespecGroupDatasourcePrograms
-from cmk.gui.valuespec import Dictionary, TextAscii, Integer, FixedValue
+from cmk.gui.valuespec import Dictionary, TextAscii, Integer, FixedValue, CascadingDropdown, Password
 from cmk.gui.watolib.rulespecs import Rulespec
 
 
@@ -57,28 +57,48 @@ def _valuespec_special_agents_telematik_konnektor():
              ),
              ),
             ("client_auth",
-             Dictionary(
-                 title=_("Client authentication (SSL)"),
-                 help=_("If your Konnektor is set to force client authentication you can provide "
-                        "your client certificate here."),
-                 elements=[
-                     ("client_cert",
-                      TextAscii(
-                          title=_("Certificate path"),
-                          help=_("Full path to the client certificate."),
-                          allow_empty=False,
-                      )
-                      ),
-                     ("client_priv_key",
-                      TextAscii(
-                          title=_("Private key path"),
-                          help=_("Full path to the unecrypted private key."),
-                          allow_empty=False,
-                      )
-                      )
-                 ],
-                 optional_keys=[],
-             ),
+                CascadingDropdown(
+                    title=_("Use client authentication"),
+                    help=_("If your Konnektor is set to force client authentication you can provide "
+                           "your client certificate or credentials here."),
+                    choices=[
+                        ("basic_auth",
+                            _("With username and password"),
+                            Dictionary(
+                                elements=[
+                                    ("username",
+                                     TextAscii(title=_("Username"), allow_empty=False,)),
+                                    ("password",
+                                     Password(title=_("Password"))),
+                                ],
+                                optional_keys=[],
+                            )
+                         ),
+                        ("cert_auth",
+                            _("With certificate"),
+                            Dictionary(
+                                elements=[
+                                    ("client_cert",
+                                     TextAscii(
+                                         title=_("Certificate path"),
+                                         help=_("Full path to the client certificate."),
+                                         allow_empty=False,
+                                     )
+                                     ),
+                                    ("client_priv_key",
+                                     TextAscii(
+                                         title=_("Private key path"),
+                                         help=_("Full path to the unecrypted private key."),
+                                         allow_empty=False,
+                                     )
+                                     )
+                                ],
+                                optional_keys=[],
+                            )
+                         )
+                    ],
+                    default_value="basic_auth",
+                ),
              ),
             ("verify_ssl",
              FixedValue(
@@ -92,10 +112,10 @@ def _valuespec_special_agents_telematik_konnektor():
                  value=True,
                  title=_("Mandant wide"),
                  totext=_("Mandant-wide request is enabled"),
-                 help=_("Create services for all terminals and cards associated with the Konnektor."
+                 help=_("Create services for all terminals and cards associated with the Konnektor for a mandant."
                         "Leave this unchecked if you only want the terminal and cards from the remote card terminal.")
              ),
-             ),
+             )
         ],
         optional_keys=["client_auth", "verify_ssl", "mandant_wide"],
         title=_("Telematikinfrastruktur Konnektor Agent"),
