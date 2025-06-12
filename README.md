@@ -31,4 +31,4 @@ Maybe I will rewrite it in the future, when it is no longer necessary to manuall
 ## Debugging
 The special agent provides a debug mode which you can use to debug errors. Run the special agent from the command line with the additional parameter --debug.
 
-#### The specifications used to develop this plugin are from Gematik and described [here](https://fachportal.gematik.de/fachportal-import/files/gemSpec_Kon_V5.13.0.pdf)
+#### The specifications used to develop this plugin are from Gematik and described [here](https://gemspec.gematik.de/docs/gemSpec/gemSpec_Kon/gemSpec_Kon_V5.13.0/)
