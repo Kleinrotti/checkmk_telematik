@@ -25,7 +25,7 @@ from cmk.rulesets.v1.form_specs import (
     LevelDirection,
     Integer
 )
-from cmk.rulesets.v1.rule_specs import HostAndServiceCondition, CheckParameters, Topic
+from cmk.rulesets.v1.rule_specs import HostAndItemCondition, CheckParameters, Topic
 
 
 def _parameter_valuespec_telematik_konnektor_card():
@@ -35,33 +35,38 @@ def _parameter_valuespec_telematik_konnektor_card():
                 parameter_form=ServiceState(
                     title=Title("State when SMC card is verified"),
                     prefill=DefaultValue(ServiceState.OK),
-                ),
+                )
             ),
             "verifiable": DictElement(
                 parameter_form=ServiceState(
                     title=Title("State when SMC card is verifiable"),
                     prefill=DefaultValue(ServiceState.CRIT),
-                ),),
+                )
+            ),
             "blocked": DictElement(
                 parameter_form=ServiceState(
                     title=Title("State when SMC card is blocked"),
                     prefill=DefaultValue(ServiceState.CRIT),
-                ),),
+                )
+            ),
             "transport_pin": DictElement(
                 parameter_form=ServiceState(
                     title=Title("State when SMC card is in transport PIN mode"),
                     prefill=DefaultValue(ServiceState.WARN),
-                ),),
+                )
+            ),
             "empty_pin": DictElement(
                 parameter_form=ServiceState(
                     title=Title("State when SMC card PIN is empty"),
                     prefill=DefaultValue(ServiceState.WARN),
-                ),),
+                )
+            ),
             "disabled": DictElement(
                 parameter_form=ServiceState(
                     title=Title("State when SMC card PIN is disabled"),
                     prefill=DefaultValue(ServiceState.WARN),
-                ),),
+                )
+            ),
             "cert": DictElement(
                 parameter_form=Dictionary(
                     title=Title("Check SMC cards certificate expiration"),
@@ -89,7 +94,7 @@ def _parameter_valuespec_telematik_konnektor_card():
 rule_spec_telematik_konnektor_card = CheckParameters(
     name="telematik_card",
     title=Title("Telematikinfrastrukur SMC Card"),
-    condition=HostAndServiceCondition,
+    condition=HostAndItemCondition(item_title=Title("Card name")),
     topic=Topic.APPLICATIONS,
     parameter_form=_parameter_valuespec_telematik_konnektor_card,
 )

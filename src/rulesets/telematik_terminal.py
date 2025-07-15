@@ -21,7 +21,7 @@ from cmk.rulesets.v1.form_specs import (
     DefaultValue,
     DictElement
 )
-from cmk.rulesets.v1.rule_specs import HostAndServiceCondition, CheckParameters, Topic
+from cmk.rulesets.v1.rule_specs import HostAndItemCondition, CheckParameters, Topic
 
 
 def _parameter_valuespec_telematik_konnektor_terminal():
@@ -46,7 +46,7 @@ def _parameter_valuespec_telematik_konnektor_terminal():
 rule_spec_telematik_konnektor_terminal = CheckParameters(
     name="telematik_terminal",
     title=Title("Telematikinfrastrukur Terminal"),
-    condition=HostAndServiceCondition,
+    condition=HostAndItemCondition(item_title=Title("Terminal name")),
     topic=Topic.APPLICATIONS,
     parameter_form=_parameter_valuespec_telematik_konnektor_terminal
 )
