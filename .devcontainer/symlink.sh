@@ -1,5 +1,5 @@
 #!/bin/bash
-NAME=$(python3 -c 'print(eval(open("./src/package").read())["name"])')
+NAME=$(python3 -c 'print(eval(open("package").read())["name"])')
 mkdir $OMD_ROOT/local/lib/python3/cmk/plugins/$NAME
 ln -s $WORKSPACE/src/* $OMD_ROOT/local/lib/python3/cmk/plugins/$NAME
 

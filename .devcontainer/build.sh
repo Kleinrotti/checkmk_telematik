@@ -1,5 +1,4 @@
 #!/bin/bash
-
 NAME=$(python3 -c 'print(eval(open("package").read())["name"])')
 rm /omd/sites/cmk/var/check_mk/packages/* ||:
 rm /omd/sites/cmk/var/check_mk/packages_local/* ||:
