@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 
-# (c) Kleinrotti <kleinrotti@saltcloud.de>
+# (c) 2025 Kleinrotti <kleinrotti@saltcloud.de>
 
 # This is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -22,17 +22,15 @@
 from dataclasses import dataclass
 from typing import List
 
-from .agent_based_api.v1.type_defs import (
+from cmk.agent_based.v2 import (
+    AgentSection,
+    CheckPlugin,
     CheckResult,
     DiscoveryResult,
-    StringTable,
-)
-
-from .agent_based_api.v1 import (
-    Result,
-    State,
     Service,
-    register
+    State,
+    Result,
+    StringTable
 )
 
 
@@ -64,30 +62,24 @@ def discovery_telematik_connector(section: Section) -> DiscoveryResult:
 
 
 def check_telematik_connector(item, section: Section) -> CheckResult:
-    connector = None
-    for sec in section:
-        if item == sec.productName:
-            connector = sec
-            break
-    if connector is None:
-        return None
-    state = State.OK
+    connector = next((sec for sec in section if item == sec.productName), None)
+    if not connector:
+        return
     text = f"Product version {connector.productTypeVersion}"
     detail = (f"TLS mandatory: {connector.tlsMandatory}\nClient auth mandatory: {connector.clientAuthMandatory}\n"
               f"Hardware version: {connector.hwVersion}\nFirmware version: {connector.fwVersion}")
-    yield Result(state=state, summary=text, details=detail)
+    yield Result(state=State.OK, summary=text, details=detail)
 
 
-register.agent_section(
+agent_section_telematik_connector = AgentSection(
     name="telematik_connector",
-    parse_function=parse_telematik_connector
+    parse_function=parse_telematik_connector,
+    parsed_section_name="telematik_connector",
 )
 
-
-register.check_plugin(
+check_plugin_telematik_connector = CheckPlugin(
     name="telematik_connector",
     service_name="%s",
-    sections=['telematik_connector'],
     discovery_function=discovery_telematik_connector,
-    check_function=check_telematik_connector
+    check_function=check_telematik_connector,
 )

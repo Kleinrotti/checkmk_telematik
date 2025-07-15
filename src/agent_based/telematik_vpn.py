@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 
-# (c) Kleinrotti <kleinrotti@saltcloud.de>
+# (c) 2025 Kleinrotti <kleinrotti@saltcloud.de>
 
 # This is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -22,17 +22,15 @@
 from dataclasses import dataclass
 from typing import List, Final
 
-from .agent_based_api.v1.type_defs import (
+from cmk.agent_based.v2 import (
+    AgentSection,
+    CheckPlugin,
     CheckResult,
     DiscoveryResult,
-    StringTable,
-)
-
-from .agent_based_api.v1 import (
-    Result,
-    State,
     Service,
-    register
+    State,
+    Result,
+    StringTable
 )
 
 
@@ -63,29 +61,23 @@ def discovery_telematik_vpn(section: Section) -> DiscoveryResult:
 
 
 def check_telematik_vpn(item: str, section: Section) -> CheckResult:
-    state = State.OK
-    vpn = None
-    for sec in section:
-        if item == sec.name:
-            vpn = sec
-            break
-    if vpn is None:
-        return None
+    vpn = next((sec for sec in section if item == sec.name), None)
+    if not vpn:
+        return
     text = f"Status: {vpn.status}"
-    state = STATE_MAPPING[vpn.status]
+    state = STATE_MAPPING.get(vpn.status, State.WARN)
     yield Result(state=state, summary=text)
 
 
-register.agent_section(
+agent_section_telematik_vpn = AgentSection(
     name="telematik_vpn",
-    parse_function=parse_telematik_vpn
+    parse_function=parse_telematik_vpn,
+    parsed_section_name="telematik_vpn",
 )
 
-
-register.check_plugin(
+check_plugin_telematik_vpn = CheckPlugin(
     name="telematik_vpn",
     service_name="%s",
-    sections=['telematik_vpn'],
     discovery_function=discovery_telematik_vpn,
-    check_function=check_telematik_vpn
+    check_function=check_telematik_vpn,
 )
