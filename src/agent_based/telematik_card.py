@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 
-# (c) Kleinrotti <kleinrotti@saltcloud.de>
+# (c) 2025 Kleinrotti <kleinrotti@saltcloud.de>
 
 # This is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -23,17 +23,17 @@ from dataclasses import dataclass
 from typing import List
 from datetime import date, datetime
 
-from .agent_based_api.v1.type_defs import (
+from cmk.agent_based.v2 import (
+    AgentSection,
+    CheckPlugin,
     CheckResult,
     DiscoveryResult,
-    StringTable,
-)
-
-from .agent_based_api.v1 import (
-    Result,
-    State,
     Service,
-    register
+    State,
+    Result,
+    StringTable,
+    check_levels,
+    render
 )
 
 
@@ -56,7 +56,9 @@ telematik_card_factory_settings = {
     'transport_pin': 1,
     'empty_pin': 1,
     'disabled': 1,
-    '-': 0
+    'cert': {
+        'cert_days': ('fixed', (60, 30))
+    }
 }
 
 
@@ -78,47 +80,40 @@ def discovery_telematik_card(section: Section) -> DiscoveryResult:
 
 
 def check_telematik_card(item, params, section: Section) -> CheckResult:
-    card = None
-    for sec in section:
-        if item == sec.cardType + "-" + sec.iccsn:
-            card = sec
-            break
-    if card is None:
-        return None
-    state = State(params[card.verified.lower()])
+    card = next((sec for sec in section if item == sec.cardType + "-" + sec.iccsn), None)
+    if not card:
+        return
+    state = State(params.get(card.verified.lower(), 0))
     currentDate = date.today()
     # covert the string date to a date object
     # in the date is a 'Z' at the end which has to be cut off
     da = datetime.strptime(card.certificateExpiration.replace('Z', ''), '%Y-%m-%d').date()
-    delta = (da - currentDate).days
+    delta = (da - currentDate).total_seconds()
     text = f"PIN Status: {card.verified}"
-    # if thresholds were set in wato, check the expiricy
-    if 'cert' in params:
-        warn = params['cert']['cert_days'][0]
-        crit = params['cert']['cert_days'][1]
-        if delta <= crit:
-            state = State.CRIT
-            text += f", CRIT: Card certificate is expiring in {delta} days."
-        elif delta <= warn:
-            state = State.WARN
-            text += f", WARN: Card certificate is expiring in {delta} days."
     detail = (f"Slot: {card.slot}\nInsert time: {card.insertTime}\nExpiration: "
               f"{card.certificateExpiration}\nOwner: {card.holderName}\nSerial: {card.iccsn}")
+    # if thresholds were set in wato, check the expiricy
     yield Result(state=state, summary=text, details=detail)
+    yield from check_levels(
+        value=delta,
+        levels_lower=params['cert']['cert_days'],
+        label="Days until card certificate expires",
+        render_func=render.timespan,
+        metric_name="certificate_remaining_validity"
+    )
 
 
-register.agent_section(
+agent_section_telematik_card = AgentSection(
     name="telematik_card",
-    parse_function=parse_telematik_card
+    parse_function=parse_telematik_card,
+    parsed_section_name="telematik_card",
 )
 
-
-register.check_plugin(
+check_plugin_telematik_card = CheckPlugin(
     name="telematik_card",
     service_name="Card %s",
-    sections=['telematik_card'],
     discovery_function=discovery_telematik_card,
     check_function=check_telematik_card,
     check_ruleset_name="telematik_card",
-    check_default_parameters=telematik_card_factory_settings,
+    check_default_parameters=telematik_card_factory_settings
 )

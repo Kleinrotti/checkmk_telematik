@@ -1,6 +1,8 @@
 title: Telematikinfrastruktur: Operation states
 agents: telematik_konnektor
+catalog: applications/Telematik
 license: GPLv2
+distribution: mkp
 description:
  This check monitors the operation states of the Konnektor.
  It goes to CRITICAL if a operation state has a problem.

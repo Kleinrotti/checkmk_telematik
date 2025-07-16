@@ -1,7 +1,8 @@
 #!/bin/bash
-
-NAME=$(python3 -c 'print(eval(open("src/package").read())["name"])')
+NAME=$(python3 -c 'print(eval(open("package").read())["name"])')
 rm /omd/sites/cmk/var/check_mk/packages/* ||:
-ln -s $WORKSPACE/src/package /omd/sites/cmk/var/check_mk/packages/$NAME
+rm /omd/sites/cmk/var/check_mk/packages_local/* ||:
+ln -s $WORKSPACE/package /omd/sites/cmk/tmp/check_mk/$NAME
 
-mkp -v pack $NAME
+mkp -v package /omd/sites/cmk/tmp/check_mk/$NAME
+cp /omd/sites/cmk/var/check_mk/packages_local/$NAME*.mkp ./build

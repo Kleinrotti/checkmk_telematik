@@ -1,0 +1,28 @@
+{
+    'author': u'Kleinrotti',
+    'description': u'A plugin to monitor a TI Konnektor.\n'
+    u'Please read the [changelog](https://github.com/Kleinrotti/checkmk_telematik/releases) before updating!',
+    'download_url': 'https://github.com/Kleinrotti/checkmk_telematik',
+    'files': {'cmk_plugins': ['telematik_konnektor/agent_based/telematik_card.py',
+                              'telematik_konnektor/agent_based/telematik_connector.py',
+                              'telematik_konnektor/agent_based/telematik_operation.py',
+                              'telematik_konnektor/agent_based/telematik_terminal.py',
+                              'telematik_konnektor/agent_based/telematik_vpn.py',
+                              'telematik_konnektor/checkman/telematik_card',
+                              'telematik_konnektor/checkman/telematik_connector',
+                              'telematik_konnektor/checkman/telematik_operation',
+                              'telematik_konnektor/checkman/telematik_terminal',
+                              'telematik_konnektor/checkman/telematik_vpn',
+                              'telematik_konnektor/libexec/agent_telematik_konnektor',
+                              'telematik_konnektor/rulesets/telematik_card.py',
+                              'telematik_konnektor/rulesets/telematik_konnektor_register.py',
+                              'telematik_konnektor/rulesets/telematik_operation.py',
+                              'telematik_konnektor/rulesets/telematik_terminal.py',
+                              'telematik_konnektor/server_side_calls/check_telematik_konnektor.py'
+                              ]},
+    'name': 'telematik_konnektor',
+    'title': u'Telematikinfrastruktur Konnektor Agent',
+    'version': '0.0.0',
+    'version.min_required': '2.3.0p1',
+    'version.packaged': '2.0.35'
+}

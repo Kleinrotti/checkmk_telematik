@@ -1,6 +1,8 @@
 title: Telematikinfrastruktur: Konnektor
 agents: telematik_konnektor
+catalog: applications/Telematik
 license: GPLv2
+distribution: mkp
 description:
  This check shows information about the Konnektor itself.
 

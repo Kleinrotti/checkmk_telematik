@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 
-# (c) Kleinrotti <kleinrotti@saltcloud.de>
+# (c) 2025 Kleinrotti <kleinrotti@saltcloud.de>
 
 # This is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -22,17 +22,15 @@
 from dataclasses import dataclass
 from typing import List
 
-from .agent_based_api.v1.type_defs import (
+from cmk.agent_based.v2 import (
+    AgentSection,
+    CheckPlugin,
     CheckResult,
     DiscoveryResult,
-    StringTable,
-)
-
-from .agent_based_api.v1 import (
-    Result,
-    State,
     Service,
-    register
+    State,
+    Result,
+    StringTable
 )
 
 
@@ -69,33 +67,28 @@ def discovery_telematik_operation(section: Section) -> DiscoveryResult:
 
 
 def check_telematik_operation(item, params, section: Section) -> CheckResult:
-    state = State.OK
-    condition = None
-    for sec in section:
-        if item == sec.condition:
-            condition = sec
-            break
-    if condition is None:
-        return None
+    condition = next((sec for sec in section if item == sec.condition), None)
+    if not condition:
+        return
     text = f"Problem: {condition.value}, Severity: {condition.severity}"
     detail = f"Type: {condition.type}\n Valid from: {condition.validFrom}"
+    state = State.OK
     if condition.value == "true":
-        state = State(params[condition.severity.lower()])
+        state = State(params.get(condition.severity.lower(), State.WARN))
     yield Result(state=state, summary=text, details=detail)
 
 
-register.agent_section(
+agent_section_telematik_operation = AgentSection(
     name="telematik_operation",
-    parse_function=parse_telematik_operation
+    parse_function=parse_telematik_operation,
+    parsed_section_name="telematik_operation",
 )
 
-
-register.check_plugin(
+check_plugin_telematik_operation = CheckPlugin(
     name="telematik_operation",
     service_name="%s",
-    sections=['telematik_operation'],
     discovery_function=discovery_telematik_operation,
     check_function=check_telematik_operation,
     check_ruleset_name="telematik_operation",
-    check_default_parameters=telematik_operation_factory_settings,
+    check_default_parameters=telematik_operation_factory_settings
 )

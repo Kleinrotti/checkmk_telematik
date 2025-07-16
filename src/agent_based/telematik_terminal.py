@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 
-# (c) Kleinrotti <kleinrotti@saltcloud.de>
+# (c) 2025 Kleinrotti <kleinrotti@saltcloud.de>
 
 # This is free software;  you can redistribute it and/or modify it
 # under the  terms of the  GNU General Public License  as published by
@@ -22,17 +22,15 @@
 from dataclasses import dataclass
 from typing import List
 
-from .agent_based_api.v1.type_defs import (
+from cmk.agent_based.v2 import (
+    AgentSection,
+    CheckPlugin,
     CheckResult,
     DiscoveryResult,
-    StringTable,
-)
-
-from .agent_based_api.v1 import (
-    Result,
-    State,
     Service,
-    register
+    State,
+    Result,
+    StringTable
 )
 
 telematik_terminal_factory_settings = {
@@ -90,18 +88,17 @@ def check_telematik_terminal(item: str, params, section: Section) -> CheckResult
     yield Result(state=state, summary=text, details=detail)
 
 
-register.agent_section(
+agent_section_telematik_terminal = AgentSection(
     name="telematik_terminal",
-    parse_function=parse_telematik_terminal
+    parse_function=parse_telematik_terminal,
+    parsed_section_name="telematik_terminal",
 )
 
-
-register.check_plugin(
+check_plugin_telematik_terminal = CheckPlugin(
     name="telematik_terminal",
     service_name="Card terminal %s",
-    sections=['telematik_terminal'],
     discovery_function=discovery_telematik_terminal,
     check_function=check_telematik_terminal,
     check_ruleset_name="telematik_terminal",
-    check_default_parameters=telematik_terminal_factory_settings,
+    check_default_parameters=telematik_terminal_factory_settings
 )
