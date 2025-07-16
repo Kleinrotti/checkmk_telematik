@@ -25,7 +25,7 @@ jobs:
       - name: Set version env
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Set current release version
-        run: sed -i 's#0.0.0#${{ env.RELEASE_VERSION }}#' src/package
+        run: sed -i 's#0.0.0#${{ env.RELEASE_VERSION }}#' package
       - name: Setup links
         run: .devcontainer/symlink.sh
       - name: Update GITHUB_PATH
