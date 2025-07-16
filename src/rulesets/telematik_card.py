@@ -23,7 +23,8 @@ from cmk.rulesets.v1.form_specs import (
     DefaultValue,
     SimpleLevels,
     LevelDirection,
-    Integer
+    TimeSpan,
+    TimeMagnitude
 )
 from cmk.rulesets.v1.rule_specs import HostAndItemCondition, CheckParameters, Topic
 
@@ -69,18 +70,19 @@ def _parameter_valuespec_telematik_konnektor_card():
             ),
             "cert": DictElement(
                 parameter_form=Dictionary(
-                    title=Title("Check SMC cards certificate expiration"),
+                    title=Title("Levels for SMC cards certificate expiration"),
                     help_text=Help(
-                        "Set these values if you want to monitor the"
-                        "certificate expiration of the SMC cards"
+                        "Set these values if you want to change the"
+                        "levels of the certificate expiration of the SMC cards"
                     ),
                     elements={
                         "cert_days": DictElement(
-                            parameter_form=SimpleLevels[int](
-                                title=Title("Age"),
-                                form_spec_template=Integer(),
+                            parameter_form=SimpleLevels(
+                                form_spec_template=TimeSpan(
+                                    displayed_magnitudes=[TimeMagnitude.DAY]),
                                 level_direction=LevelDirection.LOWER,
-                                prefill_fixed_levels=DefaultValue(value=(60, 30))
+                                prefill_fixed_levels=DefaultValue(
+                                    (60.0 * 24.0 * 3600.0, 30.0 * 24.0 * 3600.0))
                             ),
                             required=True,
                         )

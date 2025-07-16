@@ -32,7 +32,8 @@ from cmk.agent_based.v2 import (
     State,
     Result,
     StringTable,
-    check_levels
+    check_levels,
+    render
 )
 
 
@@ -87,7 +88,7 @@ def check_telematik_card(item, params, section: Section) -> CheckResult:
     # covert the string date to a date object
     # in the date is a 'Z' at the end which has to be cut off
     da = datetime.strptime(card.certificateExpiration.replace('Z', ''), '%Y-%m-%d').date()
-    delta = (da - currentDate).days
+    delta = (da - currentDate).total_seconds()
     text = f"PIN Status: {card.verified}"
     detail = (f"Slot: {card.slot}\nInsert time: {card.insertTime}\nExpiration: "
               f"{card.certificateExpiration}\nOwner: {card.holderName}\nSerial: {card.iccsn}")
@@ -97,7 +98,8 @@ def check_telematik_card(item, params, section: Section) -> CheckResult:
         value=delta,
         levels_lower=params['cert']['cert_days'],
         label="Days until card certificate expires",
-        render_func=lambda v: "%.0f" % v
+        render_func=render.timespan,
+        metric_name="certificate_remaining_validity"
     )
 
 
