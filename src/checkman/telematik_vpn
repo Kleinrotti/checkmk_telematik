@@ -1,9 +1,14 @@
 title: Telematikinfrastruktur: VPN Status
 agents: telematik_konnektor
+catalog: applications/Telematik
 license: GPLv2
+distribution: mkp
 description:
  This check monitors the VPN status of the Konnektor.
  It goes CRITICAL if the VPN is not connected.
 
 discovery:
  One service is created for each VPN connection.
+
+item:
+ VPN
