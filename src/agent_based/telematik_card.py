@@ -57,7 +57,7 @@ telematik_card_factory_settings = {
     'empty_pin': 1,
     'disabled': 1,
     'cert': {
-        'cert_days': ('fixed', (60, 30))
+        'cert_days': ('fixed', (60.0 * 24.0 * 3600.0, 30.0 * 24.0 * 3600.0))
     }
 }
 
